@@ -40,6 +40,7 @@ DXS = [
     ("ac_power_3", 67109891),
 ]
 
+DXS_NAME_MAPPER = {v[1]: v[0] for v in DXS}
 
 collectors = dict()
 
@@ -50,7 +51,7 @@ def setup_collectors():
     prometheus_client.REGISTRY.unregister(prometheus_client.PROCESS_COLLECTOR)
 
     for topic, dxs in DXS:
-        collectors[dxs] = Gauge(name=topic, documentation=topic, labelnames=['device'])
+        collectors[dxs] = Gauge(name=topic, documentation=topic, labelnames=['device', 'topic'])
 
 
 def _fetch(url):
@@ -59,8 +60,11 @@ def _fetch(url):
     data = response.json()
     for entry in data['dxsEntries']:
         value = entry['value']
-        collector = collectors[entry['dxsId']]
-        collector.labels(device='piko_15').set(value)
+        dxs_id = entry['dxsId']
+        collector = collectors[dxs_id]
+        topic = DXS_NAME_MAPPER[dxs_id]
+        collector.labels(device='piko_15', topic=topic).set(value)
+        print("Fetch", topic, value)
 
 
 def start():
